@@ -4,16 +4,19 @@ function generate(gameState) {
    // retunrs an html table with our board using divs with class matching their state
    // in a service worker we can't use document.createElement
    // so we have to use string manipulation
-   let board = gameOver ? "<h1>GameOver</h1><table>" : "<table>";
+   let board = "<table>";
    for (let j = 0; j < scale; j++) {
       board += "<tr>";
       for (let i = 0; i < scale; i++) {
          let cell = gameState[i + j * scale];
          let cellClass = "";
+         let apiEndpoint = "";
          if (cell == 0) {
             cellClass = "untouched";
+            apiEndpoint = `hx-post="/api/${flagging ? 'flag' : 'mark'}?x=${i}&y=${j}" hx-trigger="click"  hx-target="#theBoard" hx-swap="innerHtml"`;
          } else if (cell == 1) {
             cellClass = "flagged";
+            apiEndpoint = flagging ? `hx-post="/api/unflag?x=${i}&y=${j}" hx-trigger="click"  hx-target="#theBoard" hx-swap="innerHtml"` : "";
          } else if (cell == 2) {
             cellClass = "revealed";
          } else if (cell == 3) {
@@ -21,11 +24,12 @@ function generate(gameState) {
          } else if (cell == 4) {
             cellClass = "revealedBomb";
          }
-         board += `<td debug-index="${i+j*scale}" class="${cellClass} cell" ${ gameOver ? '' : `hx-post="/api/${flagging ? 'flag' : 'mark'}?x=${i}&y=${j}" hx-trigger="click"  hx-target="#theBoard" hx-swap="innerHtml"` } >${ (cell == 2 || (cell == 0 && gameOver)) ? boardValues[i+j*scale] : '' }</td>`;
+         board += `<td debug-index="${i+j*scale}" class="${cellClass} cell" ${apiEndpoint}>${ (cell == 2 || (cell == 0 && gameOver)) && boardValues[i+j*scale] != 0 ? boardValues[i+j*scale] : '' }</td>`;
       }
       board += "</tr>";
    }
    board += "</table>";
+   board += gameOver ? "<h1>GameOver</h1>" : "";
    return board;
 }
 
@@ -87,6 +91,7 @@ function handlePlayer(url) {
    console.log("fetching", url);
    const mark = new RegExp('\/api\/mark');
    const flag = new RegExp('\/api\/flag');
+   const unflag = new RegExp('\/api\/unflag');
    if (url.endsWith('/api/newGame')) {
       newGame();
       return generate(gameState);
@@ -127,7 +132,13 @@ function handlePlayer(url) {
       const y = urlParams.get("y");
       const index = parseInt(x) + parseInt(y) * 10;
       gameState[index] = gameState[index] == 2 ? 2 : 1;
-      firstMove = false;
+      return generate(gameState);
+   } else if (unflag.test(url)) { // TODO do an invalid input test
+      const urlParams = new URLSearchParams(url.split("?")[1]);
+      const x = urlParams.get("x");
+      const y = urlParams.get("y");
+      const index = parseInt(x) + parseInt(y) * 10;
+      gameState[index] = gameState[index] == 2 ? 2 : 0;
       return generate(gameState);
    }
 }
