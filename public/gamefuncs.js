@@ -21,7 +21,7 @@ function generate(gameState) {
          } else if (cell == 4) {
             cellClass = "revealedBomb";
          }
-         board += `<td debug-index="${i+j*scale}" class="${cellClass} cell" ${ gameOver ? '' : `hx-post="/api/${flagging ? 'flag' : 'mark'}?x=${i}&y=${j}" hx-trigger="click"  hx-target="#theBoard" hx-swap="innerHtml"` } >${boardValues[i+j*scale]}</td>`;
+         board += `<td debug-index="${i+j*scale}" class="${cellClass} cell" ${ gameOver ? '' : `hx-post="/api/${flagging ? 'flag' : 'mark'}?x=${i}&y=${j}" hx-trigger="click"  hx-target="#theBoard" hx-swap="innerHtml"` } >${ (cell == 2 || (cell == 0 && gameOver)) ? boardValues[i+j*scale] : '' }</td>`;
       }
       board += "</tr>";
    }
@@ -38,13 +38,7 @@ let flagging ;
 let firstMove;
 let gameOver ;
 
-function newGame() {
-   minefield = new Array((scale*scale)).fill(0);
-   console.log("minefield", minefield);
-   // set some random mines
-   for (let i = 0; i < ((scale*scale)*density); i++) {
-      minefield[Math.floor(Math.random() * scale*scale)] = 1;
-   }
+function calculateBoardValues(minefield){
    boardValues = new Array(scale*scale).fill(0);
    for (let j = 0; j < scale; j++) {
       for (let i = 0; i < scale; i++) {
@@ -67,6 +61,18 @@ function newGame() {
          }
       }
    }
+   return boardValues;
+}
+
+function newGame() {
+   minefield = new Array((scale*scale)).fill(0);
+   console.log("minefield", minefield);
+   // set some random mines
+   for (let i = 0; i < ((scale*scale)*density); i++) {
+      minefield[Math.floor(Math.random() * scale*scale)] = 1;
+   }
+   boardValues = calculateBoardValues(minefield);
+   
    gameState = new Array(100).fill(0);
    flagging = false;
    firstMove = true;
@@ -100,6 +106,7 @@ function handlePlayer(url) {
          if (firstMove) {
             minefield[index] = 0;
             gameState[index] = 2;
+            boardValues = calculateBoardValues(minefield);
          } else {
             gameOver = true;
             for (let i = 0; i < 100; i++) {
