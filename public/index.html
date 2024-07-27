@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MineOnline</title>
+    <script src="/htmx.min.js" integrity="sha384-QWGpdj554B4ETpJJC9z+ZHJcA/i59TyjxEPXiiUgN2WmTyV5OEZWCD6gQhgkdpB/" crossorigin="anonymous"></script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker
+                .register("/worker.js"
+                    , { 
+                        scope: "/"
+                        // type: "module" 
+                    }
+                ).then((registration) => {
+                    registration.addEventListener("updatefound", () => {
+                        // If updatefound is fired, it means that there's
+                        // a new service worker being installed.
+                        const installingWorker = registration.installing;
+                        installingWorker.onerror = (e) => {
+                            console.error("Service worker installation failed: ", e);
+                        };
+                        installingWorker.onstatechange = () => {
+                            if (installingWorker.state === "installed"){
+                                console.log("Service worker installed.");
+                            }
+                        }
+                        console.log(
+                            "A new service worker is being installed:",
+                            installingWorker,
+                        );
+
+                        // You can listen for changes to the installing service worker's
+                        // state via installingWorker.onstatechange
+                    });
+                })
+                .catch((error) => {
+                    console.error(`Service worker registration failed: ${error}`);
+                });
+        } else {
+            console.error("Service workers are not supported.");
+        }
+    </script>
+    <style>
+        html {
+            scroll-behavior: smooth;
+            padding: 0;
+            margin: 0;
+        }
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        header {
+            background-color: brown;
+            padding: 10px;
+            margin: 0;
+            position: sticky;
+            top:0;
+            left: 0;
+            width: calc(100svw - 20px);
+            height: calc(15svh - 20px);
+            transform-origin: top left;
+            overflow: hidden;
+
+            /* meme */
+            /* transition: all 0.5s ease; */
+        }
+        header h1 {
+            margin: 0;
+            padding: 0;
+        }
+
+        .cell {
+            width: 30px;
+            height: 30px;
+        }
+        .untouched {
+            background-color: grey;
+        }
+        .flagged {
+            background-color: black;
+        }
+        .revealed {
+            background-color: white;
+        }
+        .blown {
+            background-color: red;
+        }
+        .revealedBomb {
+            background-color: yellow;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Hello Header</h1>
+        <button onclick="alert('iDOT')">Not Bait</button>
+    </header>
+    <button hx-get="/api/newGame" hx-target="#theBoard" hx-swap="innerHtml">New Game</button>
+    <button hx-get="/api/board" hx-target="#theBoard" hx-swap="innerHtml">Clear</button>
+    <button hx-get="/api/boardFlag" hx-target="#theBoard" hx-swap="innerHtml">Flag</button>
+    <div id="theBoard" hx-trigger="load" hx-get="/api/board" ></div>
+
+    <script>
+        // Stay in the virtual Viewport
+        let h = document.querySelector("header")
+        function moveToVV(){
+            h.style.transform = "translate("+window.visualViewport.offsetLeft+"px,"+window.visualViewport.offsetTop+"px) scale("+(1/window.visualViewport.scale)+")"
+        }
+        visualViewport.addEventListener("resize", () => {
+            requestAnimationFrame(moveToVV)
+            // moveToVV();
+        });
+        visualViewport.addEventListener("scroll", () => {
+            requestAnimationFrame(moveToVV)
+            // moveToVV();
+        });
+    </script>
+</body>
+
+</html>
