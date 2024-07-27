@@ -5,9 +5,9 @@ function generate(gameState) {
    // in a service worker we can't use document.createElement
    // so we have to use string manipulation
    let board = gameOver ? "<h1>GameOver</h1><table>" : "<table>";
-   for (let i = 0; i < scale; i++) {
+   for (let j = 0; j < scale; j++) {
       board += "<tr>";
-      for (let j = 0; j < scale; j++) {
+      for (let i = 0; i < scale; i++) {
          let cell = gameState[i + j * scale];
          let cellClass = "";
          if (cell == 0) {
@@ -39,26 +39,32 @@ let firstMove;
 let gameOver ;
 
 function newGame() {
-   minefield = new Array(scale^2).fill(0);
+   minefield = new Array((scale*scale)).fill(0);
+   console.log("minefield", minefield);
    // set some random mines
-   for (let i = 0; i < (1/density)*(scale^2); i++) {
-      minefield[Math.floor(Math.random() * 100)] = 1;
+   for (let i = 0; i < ((scale*scale)*density); i++) {
+      minefield[Math.floor(Math.random() * scale*scale)] = 1;
    }
-   boardValues = new Array(scale^2).fill(0);
-   for (let i = 0; i < scale; i++) {
-      for (let j = 0; j < scale; j++) {
+   boardValues = new Array(scale*scale).fill(0);
+   for (let j = 0; j < scale; j++) {
+      for (let i = 0; i < scale; i++) {
          let count = 0;
          console.log("ij",i, j);
-         for (let k = (i == 0 ? 0 : -1); k <= (i == scale-1 ? 0 : 1); k++) {
+         const inx = i+j*scale;
+         if (minefield[inx] == 1) {
+            boardValues [inx] = -1;
+         } else {
             for (let l = (j == 0 ? 0 : -1); l <= (j == scale-1 ? 0 : 1); l++) {
-               if (!(k == 0 && l == 0)) {
-                  const nix = (i + k) + (j + l) * scale;
-                  console.log("nix", nix);
-                  count += minefield[nix];
+               for (let k = (i == 0 ? 0 : -1); k <= (i == scale-1 ? 0 : 1); k++) {
+                  if (!(k == 0 && l == 0)) {
+                     const nix = (i + k) + (j + l) * scale;
+                     console.log("nix", nix, "explosive", minefield[nix]);
+                     count += minefield[nix];
+                  }
                }
             }
+            boardValues[i + j * scale] = count;
          }
-         boardValues[i + j * scale] = count;
       }
    }
    gameState = new Array(100).fill(0);
@@ -92,7 +98,6 @@ function handlePlayer(url) {
       console.log(minefield[index] == 1 ? "BOOM" : "SAFE");
       if (minefield[index] == 1) {
          if (firstMove) {
-            firstMove = false;
             minefield[index] = 0;
             gameState[index] = 2;
          } else {
@@ -107,6 +112,7 @@ function handlePlayer(url) {
       } else {
          gameState[index] = 2;
       }
+      firstMove = false;
       return generate(gameState);
    } else if (flag.test(url)) {
       const urlParams = new URLSearchParams(url.split("?")[1]);
@@ -114,6 +120,7 @@ function handlePlayer(url) {
       const y = urlParams.get("y");
       const index = parseInt(x) + parseInt(y) * 10;
       gameState[index] = gameState[index] == 2 ? 2 : 1;
+      firstMove = false;
       return generate(gameState);
    }
 }
